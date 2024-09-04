@@ -1,0 +1,6 @@
+/.vscode
+/target
+/obj
+/demo.sh
+/.gdb_history
+/peda*

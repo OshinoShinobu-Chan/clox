@@ -1,0 +1,26 @@
+IDIR =./include
+CC=gcc
+CFLAGS=-I$(IDIR) -Wall -Werror -g
+
+SDIR=./src
+ODIR=./obj
+TDIR=./target
+LDIR =./lib
+
+LIBS=-lm
+
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+
+$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+clox: $(OBJ)
+	$(CC) -o $(TDIR)/$@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
+
+clean:
+	rm -f $(ODIR)/*.o $(TDIR)/* *~ core $(INCDIR)/*~ 
