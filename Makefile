@@ -11,10 +11,10 @@ LIBS=-lm
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_DEPS = chunk.h common.h debug.h memory.h value.h 
+_DEPS = chunk.h common.h debug.h memory.h value.h vm.h 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_OBJ = chunk.o debug.o main.o memory.o value.o 
+_OBJ = chunk.o debug.o main.o memory.o value.o vm.o 
 
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
