@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEBUG_PRINT_CODE
 // #define DEBUG_TRACE_EXCUTION
 
 #define PANIC(message)                                                                                     \
