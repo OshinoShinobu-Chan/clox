@@ -27,5 +27,6 @@ InterpretResult interpret(const char *source);
 void push(Value value);
 Value pop();
 Value *top();
+Value peek(int distance);
 
 #endif

@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "memory.h"
 #include "value.h"
+#include "object.h"
 
 void initValueArray(ValueArray *array)
 {
@@ -32,5 +34,44 @@ void writeValueArray(ValueArray *array, Value value)
 
 void printValue(Value value)
 {
-    printf("%g", value);
+    switch (value.type)
+    {
+    case VAL_BOOL:
+        printf("%s", AS_BOOL(value) ? "true" : "false");
+        return;
+    case VAL_NIL:
+        printf("%s", "nil");
+        return;
+    case VAL_NUMBER:
+        printf("%g", AS_NUMBER(value));
+        return;
+    case VAL_OBJ:
+        printObject(value);
+        return;
+    }
+}
+
+bool valuesEqual(Value a, Value b)
+{
+    if (a.type != b.type)
+        return false;
+    switch (a.type)
+    {
+    case VAL_BOOL:
+        return AS_BOOL(a) == AS_BOOL(b);
+    case VAL_NIL:
+        return false;
+    case VAL_NUMBER:
+        return AS_NUMBER(a) == AS_NUMBER(b);
+    case VAL_OBJ:
+    {
+        ObjString *aString = AS_STRING(a);
+        ObjString *bString = AS_STRING(b);
+        return aString->length == bString->length &&
+               memcmp(aString->chars, bString->chars, aString->length) == 0;
+    }
+    default:
+        PANIC("Unreachalbe code.");
+        return false;
+    }
 }
