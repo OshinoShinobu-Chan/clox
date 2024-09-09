@@ -34,24 +34,29 @@ static void runtimeError(const char *format, ...)
 static void concatenate()
 {
     ObjString *b = AS_STRING(pop());
-    ObjString *a = AS_STRING(*top());
+    ObjString *a = AS_STRING(pop());
 
     int length = a->length + b->length;
-    char *newString = reallocate((void *)a->chars, a->length + 1, length + 1);
-    memcpy(newString + a->length, b->chars, b->length);
-    newString[length] = '\0';
+    char *chars = ALLOCATE(char, length + 1);
+    memcpy(chars, a->chars, a->length);
+    memcpy(chars + a->length, b->chars, b->length);
+    chars[length] = '\0';
 
-    a->chars = newString;
-    a->length = length;
+    ObjString *result = takeString(chars, length);
+    push(OBJ_VAL(result));
 }
 
 void initVM()
 {
     resetStack();
+    vm.objects = NULL;
+    initTable(&vm.strings);
 }
 
 void freeVM()
 {
+    freeTable(&vm.strings);
+    freeObjects();
 }
 
 #define READ_BYTE() (*vm.ip++)

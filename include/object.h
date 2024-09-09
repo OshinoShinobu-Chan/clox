@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "value.h"
+#include "memory.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
@@ -19,6 +20,7 @@ typedef enum
 struct Obj
 {
     ObjType type;
+    struct Obj *next;
 };
 
 struct ObjString
@@ -26,6 +28,7 @@ struct ObjString
     Obj obj;
     int length;
     const char *chars;
+    uint32_t hash;
 };
 
 static inline bool isObjType(Value value, ObjType type)
@@ -36,5 +39,8 @@ static inline bool isObjType(Value value, ObjType type)
 ObjString *copyString(const char *chars, int length);
 void printObject(Value value);
 ObjString *takeString(const char *chars, int length);
+void freeObjects();
+
+#define FREE(type, pointer) reallocate(pointer, sizeof(type), 0)
 
 #endif
