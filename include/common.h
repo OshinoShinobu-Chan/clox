@@ -9,7 +9,9 @@
 
 #define DEBUG_PRINT_CODE
 #define DEBUG_MODE
-// #define DEBUG_TRACE_EXCUTION
+#define DEBUG_TRACE_EXCUTION
+#define UINT8_COUNT UINT8_MAX + 1
+#define MAX_LOCAL 1U << 15
 
 #define PANIC(message)                                                                                     \
     do                                                                                                     \

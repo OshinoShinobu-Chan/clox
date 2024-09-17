@@ -97,25 +97,33 @@ int addConstant(Chunk *chunk, Value value)
     return chunk->constants.count - 1;
 }
 
-void writeConstant(Chunk *chunk, Value value, int line)
+void writeConst(Chunk *chunk, int index, int line, uint8_t shortInstruction,
+                uint8_t longInstruction, unsigned int longRange, int longLengths,
+                const char *oerverflowMessage)
 {
-    int constant = addConstant(chunk, value);
-    if (constant <= (unsigned int)UINT8_MAX)
+    if (index <= (unsigned int)UINT8_MAX)
     {
-        writeChunk(chunk, OP_CONSTANT, line);
-        writeChunk(chunk, constant, line);
+        writeChunk(chunk, shortInstruction, line);
+        writeChunk(chunk, index, line);
     }
-    else if (constant <= (unsigned int)MAX_LONG_CONSTANT)
+    else if (index <= longRange)
     {
-        writeChunk(chunk, OP_CONSTANT_LONG, line);
-        uint8_t *constant_ = (uint8_t *)&constant;
-        for (int i = 0; i <= 2; i++)
+        writeChunk(chunk, longInstruction, line);
+        uint8_t *index_ = (uint8_t *)&index;
+        for (int i = 0; i < longLengths; i++)
         {
-            writeChunk(chunk, constant_[i], line);
+            writeChunk(chunk, index_[i], line);
         }
     }
     else
     {
-        PANIC("the max number of constant should not over 16777215");
+        PANIC(oerverflowMessage);
     }
+}
+
+void writeConstant(Chunk *chunk, Value value, int line)
+{
+    int constant = addConstant(chunk, value);
+    writeConst(chunk, constant, line, OP_CONSTANT, OP_CONSTANT_LONG, MAX_LONG_CONSTANT,
+               3, "the max number of constants should not over 16777215.");
 }

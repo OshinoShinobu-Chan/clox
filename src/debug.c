@@ -33,10 +33,17 @@ static int constantInstruction(const char *name, Chunk *chunk, int offset, const
     {
         PANIC("wrong constant instruction length");
     }
-    printf("%-16s %d '", name, constant);
+    printf("%-21s %d '", name, constant);
     printValue(chunk->constants.value[constant]);
     printf("'\n");
     return offset + (int)len;
+}
+
+static int jumpInstruction(const char *name, Chunk *chunk, int offset, int sign)
+{
+    int jump = (chunk->code[offset + 1] << 8) | chunk->code[offset + 2];
+    printf("%-21s %d -> %d \n", name, offset, offset + 3 + sign * jump);
+    return offset + 3;
 }
 
 int disassembleInstruction(Chunk *chunk, int offset)
@@ -98,6 +105,51 @@ int disassembleInstruction(Chunk *chunk, int offset)
 
     case OP_GREATER:
         return simpleInstruction("OP_GREATER", offset);
+
+    case OP_PRINT:
+        return simpleInstruction("OP_PRINT", offset);
+
+    case OP_POP:
+        return simpleInstruction("OP_POP", offset);
+
+    case OP_DEFINE_GLOBAL:
+        return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset, 2);
+
+    case OP_DEFINE_GLOBAL_LONG:
+        return constantInstruction("OP_DEFINE_GLOBAL_LONG", chunk, offset, 4);
+
+    case OP_GET_GLOBAL:
+        return constantInstruction("OP_GET_GLOBAL", chunk, offset, 2);
+
+    case OP_GET_GLOBAL_LONG:
+        return constantInstruction("OP_GET_GLOBAL_LONG", chunk, offset, 4);
+
+    case OP_SET_GLOBAL:
+        return constantInstruction("OP_SET_GLOBAL", chunk, offset, 2);
+
+    case OP_SET_GLOBAL_LONG:
+        return constantInstruction("OP_SET_GLOBAL_LONG", chunk, offset, 4);
+
+    case OP_GET_LOCAL:
+        return constantInstruction("OP_GET_LOCAL", chunk, offset, 2);
+
+    case OP_GET_LOCAL_LONG:
+        return constantInstruction("OP_GET_LOCAL_LONG", chunk, offset, 4);
+
+    case OP_SET_LOCAL:
+        return constantInstruction("OP_SET_LOCAL", chunk, offset, 2);
+
+    case OP_SET_LOCAL_LONG:
+        return constantInstruction("OP_SET_LOCAL_LONG", chunk, offset, 4);
+
+    case OP_JUMP:
+        return jumpInstruction("OP_JUMP", chunk, offset, 1);
+
+    case OP_JUMP_BACK:
+        return jumpInstruction("OP_JUMP_BACK", chunk, offset, -1);
+
+    case OP_JUMP_IF_FALSE:
+        return jumpInstruction("OP_JUMP_IF_FALSE", chunk, offset, 1);
 
     default:
         printf("Unknow code %d\n", instruction);

@@ -46,20 +46,43 @@ static void concatenate()
     push(OBJ_VAL(result));
 }
 
+static bool isFalsey(Value value)
+{
+    if (IS_NIL(value))
+        return true;
+    if (IS_BOOL(value))
+        return !AS_BOOL(value);
+    runtimeError("Condition can only be bool or nil.");
+    return false;
+}
+
 void initVM()
 {
     resetStack();
     vm.objects = NULL;
     initTable(&vm.strings);
+    initTable(&vm.globals);
 }
 
 void freeVM()
 {
     freeTable(&vm.strings);
+    freeTable(&vm.globals);
     freeObjects();
 }
 
 #define READ_BYTE() (*vm.ip++)
+
+static int readBytes(int len)
+{
+    int bytes = 0;
+    for (int i = 0; i < len; i++)
+    {
+        bytes = (bytes << 8) + READ_BYTE();
+    }
+    return bytes;
+}
+
 Value readConstant(int len)
 {
     int constant = 0;
@@ -70,9 +93,21 @@ Value readConstant(int len)
     return vm.chunk->constants.value[constant];
 }
 
+Value readLocal(int len)
+{
+    int local = 0;
+    for (int i = 0; i < len; i++)
+    {
+        local = (local << 8) + READ_BYTE();
+    }
+    return vm.stack[local];
+}
+
 InterpretResult run()
 {
 #define READ_CONSTANT() (vm.chunk->constants.value[READ_BYTE()])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
+#define READ_STRING_LONG(len) AS_STRING(readConstant(len))
 #define BINARY_OP(valueType, op)                        \
     do                                                  \
     {                                                   \
@@ -150,8 +185,6 @@ InterpretResult run()
         }
         case OP_RETURN:
         {
-            printValue(pop());
-            printf("\n");
             return INTERPRET_OK;
         }
         case OP_TRUE:
@@ -192,11 +225,127 @@ InterpretResult run()
         case OP_GREATER:
             BINARY_OP(BOOL_VAL, >);
             break;
+        case OP_PRINT:
+        {
+            printValue(pop());
+            printf("\n");
+            break;
+        }
+        case OP_POP:
+            pop();
+            break;
+        case OP_DEFINE_GLOBAL:
+        {
+            ObjString *name = READ_STRING();
+            tableSet(name, peek(0), &vm.globals);
+            pop();
+            break;
+        }
+        case OP_DEFINE_GLOBAL_LONG:
+        {
+            ObjString *name = READ_STRING_LONG(3);
+            tableSet(name, peek(0), &vm.globals);
+            pop();
+            break;
+        }
+        case OP_GET_GLOBAL:
+        {
+            ObjString *name = READ_STRING();
+            Value value;
+            if (!tableGet(&vm.globals, name, &value))
+            {
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(value);
+            break;
+        }
+        case OP_GET_GLOBAL_LONG:
+        {
+            ObjString *name = READ_STRING_LONG(3);
+            Value value;
+            if (!tableGet(&vm.globals, name, &value))
+            {
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(value);
+            break;
+        }
+        case OP_SET_GLOBAL:
+        {
+            ObjString *name = READ_STRING();
+            Value value = peek(0);
+            if (tableSet(name, value, &vm.globals))
+            {
+                tableDelete(&vm.globals, name);
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
+        case OP_SET_GLOBAL_LONG:
+        {
+            ObjString *name = READ_STRING_LONG(3);
+            Value value = peek(0);
+            if (tableSet(name, value, &vm.globals))
+            {
+                tableDelete(&vm.globals, name);
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            break;
+        }
+        case OP_GET_LOCAL:
+        {
+            uint8_t slot = READ_BYTE();
+            push(vm.stack[slot]);
+            break;
+        }
+        case OP_GET_LOCAL_LONG:
+        {
+            int slot = readBytes(3);
+            push(vm.stack[slot]);
+            break;
+        }
+        case OP_SET_LOCAL:
+        {
+            uint8_t slot = READ_BYTE();
+            vm.stack[slot] = peek(0);
+            break;
+        }
+        case OP_SET_LOCAL_LONG:
+        {
+            int slot = readBytes(3);
+            vm.stack[slot] = peek(0);
+            break;
+        }
+        case OP_JUMP:
+        {
+            uint16_t offset = readBytes(2);
+            vm.ip += offset;
+            break;
+        }
+        case OP_JUMP_BACK:
+        {
+            uint16_t offset = readBytes(2);
+            vm.ip -= offset;
+            break;
+        }
+        case OP_JUMP_IF_FALSE:
+        {
+            uint16_t offset = readBytes(2);
+            if (isFalsey(peek(0)))
+                vm.ip += offset;
+            break;
+        }
         }
     }
 #undef BINARY_OP
 #undef READ_CONSTANT
 #undef READ_BYTE
+#undef READ_STRING
+#undef READ_STRING_LONG
 }
 
 InterpretResult interpret(const char *source)
